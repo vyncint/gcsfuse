@@ -776,7 +776,8 @@ func (f *FileInode) writeUsingBufferedWrites(ctx context.Context, data []byte, o
 	defer finishSpan()
 	err = f.bwh.Write(ctx, data, offset)
 	var preconditionErr *gcs.PreconditionError
-	if errors.As(err, &preconditionErr) {
+	var notFoundErr *gcs.NotFoundError
+	if errors.As(err, &preconditionErr) || errors.As(err, &notFoundErr) {
 		return false, &gcsfuse_errors.FileClobberedError{
 			Err:        fmt.Errorf("f.bwh.Write(): %w", err),
 			ObjectName: f.src.Name,
@@ -806,7 +807,8 @@ func (f *FileInode) writeUsingBufferedWrites(ctx context.Context, data []byte, o
 func (f *FileInode) flushUsingBufferedWriteHandler(ctx context.Context) error {
 	obj, err := f.bwh.Flush(ctx)
 	var preconditionErr *gcs.PreconditionError
-	if errors.As(err, &preconditionErr) {
+	var notFoundErr *gcs.NotFoundError
+	if errors.As(err, &preconditionErr) || errors.As(err, &notFoundErr) {
 		return &gcsfuse_errors.FileClobberedError{
 			Err:        fmt.Errorf("f.bwh.Flush(): %w", err),
 			ObjectName: f.src.Name,
@@ -830,7 +832,8 @@ func (f *FileInode) SyncPendingBufferedWrites(ctx context.Context) (gcsSynced bo
 	}
 	minObj, err := f.bwh.Sync(ctx)
 	var preconditionErr *gcs.PreconditionError
-	if errors.As(err, &preconditionErr) {
+	var notFoundErr *gcs.NotFoundError
+	if errors.As(err, &preconditionErr) || errors.As(err, &notFoundErr) {
 		err = &gcsfuse_errors.FileClobberedError{
 			Err:        fmt.Errorf("f.bwh.Sync(ctx): %w", err),
 			ObjectName: f.src.Name,
@@ -1038,7 +1041,8 @@ func (f *FileInode) syncUsingContent(ctx context.Context, writeCtx *WriteContext
 	newObj, err := f.bucket.SyncObject(ctx, f.Name().GcsObjectName(), latestGcsObj, f.content)
 
 	var preconditionErr *gcs.PreconditionError
-	if errors.As(err, &preconditionErr) {
+	var notFoundErr *gcs.NotFoundError
+	if errors.As(err, &preconditionErr) || errors.As(err, &notFoundErr) {
 		return &gcsfuse_errors.FileClobberedError{
 			Err:        fmt.Errorf("SyncObject: %w", err),
 			ObjectName: f.src.Name,
